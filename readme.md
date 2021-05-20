@@ -1,0 +1,1 @@
+This thing is so you can track whether or not you have covid because you might have crossed paths with someone who might have covid.
