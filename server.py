@@ -7,7 +7,8 @@ import math
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
+from datetime import datetime, timedelta
+import pymongo
 ########################################SMS FUNCTIONS##################################################################
 def sendSMS(message_string, phone_number):
     client = Client('AC0f43a1dddccda0ae011e70bb1963621a', '4059bc1168b5b6adeae6de79b5d16fad')
@@ -24,6 +25,58 @@ def covidAlert(phone_number):
     message = "You have been in close proximity with an active case of COVID-19." \
             "You need to get tested for COVID-19 as soon as possible"
     sendSMS(message, phone_number)
+#######################################################################################################################
+
+#########################################DB COMMANDS###################################################################
+
+
+def conDB():  # Creates a connection to the database **ONLY WORKS ON LOCALHOST**
+    conn = pymongo.MongoClient()
+    db = conn.pfs
+    return db
+
+
+def register(phone_number):  # Adds registered user to the database
+    encrypted = encrypt(phone_number, 123)  # 123 is proof of concept key
+    db = conDB()
+    pDic = {"PhoneNumber": encrypted, "LocDate": []}
+    db.users.insertOne(pDic)  # SHOULD work
+
+
+def pingDB(phone_number, long, lat):  # Pings user location to the database
+    encrypted = encrypt(phone_number, 123)  # 123 is proof of concept key
+    current = datetime.datetime.now()
+    date = datetime.datetime(current.year, current.month, current.day)
+    db = conDB()
+    query = {"PhoneNumber": encrypted}
+    inpvalues = {"$push": {"LocDate": {"Long": long, "Lat": lat, "Date": date}}}
+    db.users.updateOne(query, inpvalues)
+
+
+def declutterDB():  # Removes data from the DB that has existed for over two weeks
+    current = datetime.datetime.now()
+    datenow = datetime.datetime(current.year, current.month, current.day)
+    d = datetime.timedelta(days=14)
+    dcDate = datenow - d
+    inpvalues = {"$pull": {"LocDate": {"LocDate.Date": {"$gte": dcDate}}}}
+    multi = {"multi": True}
+    db = conDB()
+    db.users.updateMany({}, inpvalues, multi)
+
+
+def covidLOC(phone_number):  # Creates array of covid affected locations. Runs covid system
+    encrypted = encrypt(phone_number, 123)
+    db = conDB()
+    filterLoc = {"_id": 0, "PhoneNumber": 0}
+    locations = db.users.find({"PhoneNumber": encrypted}, filterLoc).toArray()
+    covidSystem(locations)
+
+
+def covidSystem(locations):  # TBC Will alert all potentially affected people
+    locations[0].Long
+    locations[0].Lat  # TO BE COMPLETED
+
+
 #######################################################################################################################
 
 ########################################DISTANCE CALCULATION###########################################################
