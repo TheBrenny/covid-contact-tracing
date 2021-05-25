@@ -6,3 +6,13 @@ Initial server.py uploaded. SMS, encrypting/decrypting, and distance calculating
 Necessary packages:
 __pymongo__
 (pip install pymongo)
+
+twilio
+(pip install twilio)
+
+node.js
+https://nodejs.org/en/download/
+
+cryptography
+(pip install cryptography)
+
