@@ -91,6 +91,14 @@ def distance(lat1, lon1, lat2, lon2):#uses haversine formula, not convinced it w
     a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
+
+def squareRange(lat, lon):#outputs a set of points that make up a square of side length 50m
+    latmin = float(lat) - 0.225
+    latmax = float(lat) + 0.225
+    lonmin = float(lon) - (25/(111111*math.cos(math.radians(float(lat)))))
+    lonmax = float(lon) + (25/(111111 * math.cos(math.radians(float(lat)))))
+    range = [latmin, latmax, lonmin, lonmax]
+    return range
 #######################################################################################################################
 
 ###########################################ENCRYPTING AND HASHING######################################################
