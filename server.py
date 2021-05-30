@@ -71,10 +71,24 @@ def covidLOC(phone_number):  # Creates array of covid affected locations. Runs c
     locations = db.users.find({"PhoneNumber": encrypted}, filterLoc).toArray()
     covidSystem(locations)
 
-
-def covidSystem(locations):  # TBC Will alert all potentially affected people
-    locations[0].Long
-    locations[0].Lat  # TO BE COMPLETED
+def covidSystem(locations):  # Alerts all affected people
+    range = squareRange(locations[0].Lat, locations[0].Long)
+    longMax = {"LocDate.Long": {"$lte": range[3]}}
+    longMin = {"LocDate.Long": {"$gte": range[2]}}
+    latMax = {"LocDate.Lat": {"$lte": range[1]}}
+    latMin = {"LocDate.Lat": {"$gte": range[0]}}
+    andLong = {"$and": [longMax, longMin]}
+    andLat = {"$and": [latMax, latMin]}
+    inputCommand = {"$or": [andLong, andLat]}
+    filterLoc = {"_id": 0, "LocDate": 0}
+    db = conDB()
+    encrypted = db.users.find(inputCommand, filterLoc).toArray()
+    unencrypted = [len(encrypted)]
+    for x in encrypted:
+        tmp = decrypt(x, 123)
+        unencrypted.append(tmp)
+    for x in unencrypted:
+        covidAlert(x)
 
 
 #######################################################################################################################
