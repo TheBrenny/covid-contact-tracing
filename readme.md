@@ -7,12 +7,12 @@ Necessary packages:
 __pymongo__
 (pip install pymongo)
 
-twilio
+__twilio__
 (pip install twilio)
 
-node.js
+__node.js__
 https://nodejs.org/en/download/
 
-cryptography
+__cryptography__
 (pip install cryptography)
 
