@@ -2,7 +2,6 @@ from os import system
 import hashlib
 import base64
 import random
-
 import pymongo
 from twilio.rest import Client
 import math
@@ -41,7 +40,7 @@ def conDB():  # Creates a connection to the database **ONLY WORKS ON LOCALHOST**
 
 
 def register(phone_number):  # Adds registered user to the database
-    encrypted = encrypt(phone_number, key)  # 123 is proof of concept key
+    encrypted = encrypt(phone_number)
     db = conDB()
     pDic = {"PhoneNumber": encrypted, "LocDate": []}
     print(encrypted)
@@ -49,7 +48,7 @@ def register(phone_number):  # Adds registered user to the database
 
 
 def pingDB(phone_number, long, lat):  # Pings user location to the database
-    encrypted = encrypt(phone_number, key)  # 123 is proof of concept key
+    encrypted = encrypt(phone_number)  # 123 is proof of concept key
     current = datetime.now()
     date = datetime(current.year, current.month, current.day)
     db = conDB()
@@ -71,7 +70,7 @@ def declutterDB():  # Removes data from the DB that has existed for over two wee
 
 
 def covidLOC(phone_number):  # Creates array of covid affected locations. Runs covid system
-    encrypted = encrypt(phone_number, key)
+    encrypted = encrypt(phone_number)
     db = conDB()
     filterLoc = {"_id": 0, "PhoneNumber": 0}
     locations = db.users.find({"PhoneNumber": encrypted}, filterLoc).toArray()
@@ -92,7 +91,7 @@ def covidSystem(locations):  # TBC Will alert all potentially affected people
     encrypted = db.users.find(inputCommand, filterLoc).toArray()
     unencrypted = [len(encrypted)]
     for x in encrypted:
-        tmp = decrypt(x, 123)
+        tmp = decrypt(x)
         unencrypted.append(tmp)
     for x in unencrypted:
         covidAlert(x)
@@ -123,14 +122,12 @@ def squareRange(lat, lon):#outputs a set of points that make up a square of side
 #######################################################################################################################
 
 ###########################################ENCRYPTING AND HASHING######################################################
-def encrypt(msg, key):
+def encrypt(msg):
     msg = str(msg).encode()
-    f = Fernet(key)
     encrypted = f.encrypt(msg)
     return encrypted
 
-def decrypt(encrypted, key):
-    f = Fernet(key)
+def decrypt(encrypted):
     return f.decrypt(encrypted).decode()
 
 def hash_string(input):#intended to hash string passwords
@@ -165,7 +162,7 @@ while 1:
             exit()
 
 key = hash_and_salt_string(password)
-
+f = Fernet(key)
 #HTTPS SERVER INITIALISATION TO GO HERE
 #######################################################################################################################
 
@@ -184,8 +181,9 @@ while 1:
     elif selection == '2':
         print("\tInput a string to be encrypted and decrypted: ")
         string_input = input()
-        print("\t AES128 Encryption: " + str(encrypt(string_input,key)))
-        print("\t AES128 Decryption: " + str(decrypt(encrypt(string_input,key),key)))
+        encrypted_string = encrypt(string_input)
+        print("\t AES128 Encryption: " + str(encrypted_string))
+        print("\t AES128 Decryption: " + str(decrypt(encrypted_string)))
         print("\nPress any key to return to menu")
         input()
     elif selection == '3':
