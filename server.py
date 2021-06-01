@@ -40,15 +40,15 @@ def conDB():  # Creates a connection to the database **ONLY WORKS ON LOCALHOST**
 
 
 def register(phone_number):  # Adds registered user to the database
-    encrypted = encrypt(phone_number)
+    encrypted = encrypt(phone_number, key)  # 123 is proof of concept key
+    hashed = hash_string(phone_number)
     db = conDB()
-    pDic = {"PhoneNumber": encrypted, "LocDate": []}
-    print(encrypted)
-    db.users.insert_one(pDic)  # SHOULD work
+    pDic = {"PhoneNumber": encrypted, "Hash": hashed, "LocDate": []}
+    db.users.insert_one(pDic)
 
 
 def pingDB(phone_number, long, lat):  # Pings user location to the database
-    encrypted = encrypt(phone_number)  # 123 is proof of concept key
+    encrypted = encrypt(phone_number)
     current = datetime.now()
     date = datetime(current.year, current.month, current.day)
     db = conDB()
@@ -70,31 +70,39 @@ def declutterDB():  # Removes data from the DB that has existed for over two wee
 
 
 def covidLOC(phone_number):  # Creates array of covid affected locations. Runs covid system
-    encrypted = encrypt(phone_number)
+    hashed = hash_string(phone_number)
     db = conDB()
-    filterLoc = {"_id": 0, "PhoneNumber": 0}
-    locations = db.users.find({"PhoneNumber": encrypted}, filterLoc).toArray()
-    covidSystem(locations)
+    filterLoc = {"_id": 0, "PhoneNumber": 0, "Hash": 0}
+    locations = db.users.find({"Hash": hashed}, filterLoc)
+    locArray = []
+    for x in locations:
+        for z in x["LocDate"]:
+            affected = [z["Long"], z["Lat"]]
+            locArray.append(affected)
+    covidSystem(locArray)
 
 
 def covidSystem(locations):  # TBC Will alert all potentially affected people
-    range = squareRange(locations[0].Lat, locations[0].Long)
-    longMax = {"LocDate.Long": {"$lte": range[3]}}
-    longMin = {"LocDate.Long": {"$gte": range[2]}}
-    latMax = {"LocDate.Lat": {"$lte": range[1]}}
-    latMin = {"LocDate.Lat": {"$gte": range[0]}}
-    andLong = {"$and": [longMax, longMin]}
-    andLat = {"$and": [latMax, latMin]}
-    inputCommand = {"$or": [andLong, andLat]}
-    filterLoc = {"_id": 0, "LocDate": 0}
-    db = conDB()
-    encrypted = db.users.find(inputCommand, filterLoc).toArray()
-    unencrypted = [len(encrypted)]
-    for x in encrypted:
-        tmp = decrypt(x)
-        unencrypted.append(tmp)
+    unencrypted = []
+    for x in locations:
+        range = squareRange(x[1], x[0])
+        longMax = {"LocDate.Long": {"$lte": range[3]}}
+        longMin = {"LocDate.Long": {"$gte": range[2]}}
+        latMax = {"LocDate.Lat": {"$lte": range[1]}}
+        latMin = {"LocDate.Lat": {"$gte": range[0]}}
+        andLong = {"$and": [longMax, longMin]}
+        andLat = {"$and": [latMax, latMin]}
+        inputCommand = {"$or": [andLong, andLat]}
+        filterLoc = {"_id": 0, "LocDate": 0, "Hash": 0}
+        db = conDB()
+        encrypted = db.users.find(inputCommand, filterLoc)
+        for x in encrypted:
+            tmp = decrypt(x["PhoneNumber"])
+            unencrypted.append(tmp)
+    unencrypted = list(dict.fromkeys(unencrypted))
     for x in unencrypted:
         covidAlert(x)
+
 
 
 #######################################################################################################################
@@ -168,8 +176,9 @@ f = Fernet(key)
 
 ####################################TESTING INTERFACE##################################################################
 while 1:
-    print("\n\t0. Exit\n\t1. Test hash function\n\t2. Test Encryption and decryption" \
-            "\n\t3. Test authentication code\n\t4. Test distance\n\t5. Register user\n\t6. Ping location")
+    print("\n\t0. Exit\n\t1. Test hash function\n\t2. Test Encryption and decryption"
+            "\n\t3. Test authentication code\n\t4. Test distance\n\t5. Register user\n\t"
+          "6. Ping location\n\t7. Input covid affected number")
     selection = input()
 
     if selection == '1':
@@ -220,6 +229,9 @@ while 1:
         register(1234)
     elif selection == '6':
         pingDB(1234, 12.00, 21.00)
+    elif selection == '7':
+        print("\nPlease enter the phone number that has been covid affected")
+        covidLOC(input())    
     elif selection == '0':
         print("Goodbye")
         exit()
