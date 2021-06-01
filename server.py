@@ -2,24 +2,28 @@ from os import system
 import hashlib
 import base64
 import random
+
+import pymongo
 from twilio.rest import Client
 import math
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from datetime import datetime, timedelta
-import pymongo
+
 ########################################SMS FUNCTIONS##################################################################
 def sendSMS(message_string, phone_number):
     client = Client('AC0f43a1dddccda0ae011e70bb1963621a', '4059bc1168b5b6adeae6de79b5d16fad')
     message = client.messages \
         .create(body=message_string,from_='+12068232616',to=phone_number)
 
+
 def sendSMSCode(phone_number):
     code = random.randint(100000, 999999)
     message = "Your authentication code for COVID-Contact-Tracing is: " + str(code)
     sendSMS(message, phone_number)
     return code
+
 
 def covidAlert(phone_number):
     message = "You have been in close proximity with an active case of COVID-19." \
@@ -37,41 +41,44 @@ def conDB():  # Creates a connection to the database **ONLY WORKS ON LOCALHOST**
 
 
 def register(phone_number):  # Adds registered user to the database
-    encrypted = encrypt(phone_number, 123)  # 123 is proof of concept key
+    encrypted = encrypt(phone_number, key)  # 123 is proof of concept key
     db = conDB()
     pDic = {"PhoneNumber": encrypted, "LocDate": []}
-    db.users.insertOne(pDic)  # SHOULD work
+    print(encrypted)
+    db.users.insert_one(pDic)  # SHOULD work
 
 
 def pingDB(phone_number, long, lat):  # Pings user location to the database
-    encrypted = encrypt(phone_number, 123)  # 123 is proof of concept key
-    current = datetime.datetime.now()
-    date = datetime.datetime(current.year, current.month, current.day)
+    encrypted = encrypt(phone_number, key)  # 123 is proof of concept key
+    current = datetime.now()
+    date = datetime(current.year, current.month, current.day)
     db = conDB()
     query = {"PhoneNumber": encrypted}
     inpvalues = {"$push": {"LocDate": {"Long": long, "Lat": lat, "Date": date}}}
-    db.users.updateOne(query, inpvalues)
+    print(encrypted)
+    db.users.update_one(query, inpvalues)
 
 
 def declutterDB():  # Removes data from the DB that has existed for over two weeks
-    current = datetime.datetime.now()
-    datenow = datetime.datetime(current.year, current.month, current.day)
-    d = datetime.timedelta(days=14)
+    current = datetime.now()
+    datenow = datetime(current.year, current.month, current.day)
+    d = timedelta(days=14)
     dcDate = datenow - d
     inpvalues = {"$pull": {"LocDate": {"LocDate.Date": {"$gte": dcDate}}}}
     multi = {"multi": True}
     db = conDB()
-    db.users.updateMany({}, inpvalues, multi)
+    db.users.update_many({}, inpvalues, multi)
 
 
 def covidLOC(phone_number):  # Creates array of covid affected locations. Runs covid system
-    encrypted = encrypt(phone_number, 123)
+    encrypted = encrypt(phone_number, key)
     db = conDB()
     filterLoc = {"_id": 0, "PhoneNumber": 0}
     locations = db.users.find({"PhoneNumber": encrypted}, filterLoc).toArray()
     covidSystem(locations)
 
-def covidSystem(locations):  # Alerts all affected people
+
+def covidSystem(locations):  # TBC Will alert all potentially affected people
     range = squareRange(locations[0].Lat, locations[0].Long)
     longMax = {"LocDate.Long": {"$lte": range[3]}}
     longMin = {"LocDate.Long": {"$gte": range[2]}}
@@ -117,7 +124,7 @@ def squareRange(lat, lon):#outputs a set of points that make up a square of side
 
 ###########################################ENCRYPTING AND HASHING######################################################
 def encrypt(msg, key):
-    msg = msg.encode()
+    msg = str(msg).encode()
     f = Fernet(key)
     encrypted = f.encrypt(msg)
     return encrypted
@@ -165,7 +172,7 @@ key = hash_and_salt_string(password)
 ####################################TESTING INTERFACE##################################################################
 while 1:
     print("\n\t0. Exit\n\t1. Test hash function\n\t2. Test Encryption and decryption" \
-            "\n\t3. Test authentication code\n\t4. Test distance")
+            "\n\t3. Test authentication code\n\t4. Test distance\n\t5. Register user\n\t6. Ping location")
     selection = input()
 
     if selection == '1':
@@ -189,6 +196,7 @@ while 1:
         #read response from client, through https server
         #if(code == response):
         #    print("Authentication successful")
+        #    register(phone_number)
         #else:
         #    print("Authentication unsuccessful")
         print("Press any key to return to menu")
@@ -210,6 +218,10 @@ while 1:
         print("The distance between the two points is: " + str(distance(lat1, lon1, lat2, lon2)))
         print("\nPress any key to return to menu")
         input()
+    elif selection == '5':
+        register(1234)
+    elif selection == '6':
+        pingDB(1234, 12.00, 21.00)
     elif selection == '0':
         print("Goodbye")
         exit()
