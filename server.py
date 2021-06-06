@@ -1,14 +1,19 @@
-from os import system
 import hashlib
 import base64
-import random
-import pymongo
-from twilio.rest import Client
-import math
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import random
+import math
 from datetime import datetime, timedelta
+import pymongo
+from twilio.rest import Client
+from flask import Flask
+from flask import request
+from flask import jsonify
+from flask import make_response
+import json
+
 
 ########################################SMS FUNCTIONS##################################################################
 def sendSMS(message_string, phone_number):
@@ -28,11 +33,8 @@ def covidAlert(phone_number):
     message = "You have been in close proximity with an active case of COVID-19." \
             "You need to get tested for COVID-19 as soon as possible"
     sendSMS(message, phone_number)
-#######################################################################################################################
 
 #########################################DB COMMANDS###################################################################
-
-
 def conDB():  # Creates a connection to the database **ONLY WORKS ON LOCALHOST**
     conn = pymongo.MongoClient()
     db = conn.pfs
@@ -40,7 +42,7 @@ def conDB():  # Creates a connection to the database **ONLY WORKS ON LOCALHOST**
 
 
 def register(phone_number):  # Adds registered user to the database
-    encrypted = encrypt(phone_number, key)  # 123 is proof of concept key
+    encrypted = encrypt(phone_number)
     hashed = hash_string(phone_number)
     db = conDB()
     pDic = {"PhoneNumber": encrypted, "Hash": hashed, "LocDate": []}
@@ -54,7 +56,7 @@ def pingDB(phone_number, long, lat):  # Pings user location to the database
     db = conDB()
     query = {"PhoneNumber": encrypted}
     inpvalues = {"$push": {"LocDate": {"Long": long, "Lat": lat, "Date": date}}}
-    print(encrypted)
+    #print(encrypted)
     db.users.update_one(query, inpvalues)
 
 
@@ -104,9 +106,16 @@ def covidSystem(locations):  # TBC Will alert all potentially affected people
         covidAlert(x)
 
 
+def store_code(code):
+    fw = open("codes.txt", 'w')
+    fw.write(str(code))
+    fw.close()
+    return
 
-#######################################################################################################################
-
+def read_code():
+    fr = open("codes.txt", "r")
+    out_code = fr.read()
+    return out_code
 ########################################DISTANCE CALCULATION###########################################################
 def distance(lat1, lon1, lat2, lon2):#uses haversine formula, not convinced it works
     R = 6373
@@ -120,6 +129,7 @@ def distance(lat1, lon1, lat2, lon2):#uses haversine formula, not convinced it w
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
+
 def squareRange(lat, lon):#outputs a set of points that make up a square of side length 50m
     latmin = float(lat) - 0.225
     latmax = float(lat) + 0.225
@@ -127,7 +137,6 @@ def squareRange(lat, lon):#outputs a set of points that make up a square of side
     lonmax = float(lon) + (25/(111111 * math.cos(math.radians(float(lat)))))
     range = [latmin, latmax, lonmin, lonmax]
     return range
-#######################################################################################################################
 
 ###########################################ENCRYPTING AND HASHING######################################################
 def encrypt(msg):
@@ -135,8 +144,10 @@ def encrypt(msg):
     encrypted = f.encrypt(msg)
     return encrypted
 
+
 def decrypt(encrypted):
     return f.decrypt(encrypted).decode()
+
 
 def hash_string(input):#intended to hash string passwords
     encoded_string = input.encode()
@@ -144,13 +155,14 @@ def hash_string(input):#intended to hash string passwords
     hash_fn.update(encoded_string)
     return hash_fn.hexdigest()
 
+
 def hash_and_salt_string(input):
     salt = "FJNBTGEITVALPOEV"
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(), length=32, salt=salt.encode('utf-8'), iterations=100
     )
     return base64.urlsafe_b64encode(kdf.derive(password.encode('utf-8')))
-#######################################################################################################################
+
 
 #############################################SERVER START UP###########################################################
 count  = 0
@@ -171,70 +183,77 @@ while 1:
 
 key = hash_and_salt_string(password)
 f = Fernet(key)
-#HTTPS SERVER INITIALISATION TO GO HERE
-#######################################################################################################################
 
-####################################TESTING INTERFACE##################################################################
-while 1:
-    print("\n\t0. Exit\n\t1. Test hash function\n\t2. Test Encryption and decryption"
-            "\n\t3. Test authentication code\n\t4. Test distance\n\t5. Register user\n\t"
-          "6. Ping location\n\t7. Input covid affected number")
-    selection = input()
+app = Flask(__name__)
 
-    if selection == '1':
-        print("\tInput a string to be hashed: ")
-        string_input = input()
-        print("\n\t SHA256 output: " + str(hash_string(string_input)))
-        print("\nPress any key to return to menu")
-        input()
-    elif selection == '2':
-        print("\tInput a string to be encrypted and decrypted: ")
-        string_input = input()
-        encrypted_string = encrypt(string_input)
-        print("\t AES128 Encryption: " + str(encrypted_string))
-        print("\t AES128 Decryption: " + str(decrypt(encrypted_string)))
-        print("\nPress any key to return to menu")
-        input()
-    elif selection == '3':
-        print("\tInput a phone number in the format [+61][4xxxxxxxx] to test verification code")
-        phone_number = input()
+#############################################HTTPS/Flask server methods###########################################################
+@app.route('/data_entry', methods=['POST', 'GET'])
+def data_entry():
+    jsondata = request.json
+    data = json.loads(jsondata)
+    phone_number = data['phone_number']
+    longitude = data['longitude']
+    latitude = data['latitude']
+    #commented out for not having db setup
+    #pingDB(phone_number, longitude, latitude)
 
-        #sendSMS(message, phone_number) #use this sparingly in testing, we know it works, dont waste twilio credit
-        #read response from client, through https server
-        #if(code == response):
-        #    print("Authentication successful")
-        #    register(phone_number)
-        #else:
-        #    print("Authentication unsuccessful")
-        print("Press any key to return to menu")
-        input()
-    elif selection == '4':
-        #can use the below values for testing, distance should be 278.545589...
-        #lat1 = 52.2296756
-        #long1 = 21.0122287
-        #lat2 = 52.406374
-        #long2 = 16.9251681
-        print("\tInput latitude 1")
-        lat1 = float(input())
-        print("\tInput latitude 2")
-        lat2 = float(input())
-        print("\tInput longitude 1")
-        lon1 = float(input())
-        print("\tInput longitude 2")
-        lon2 = float(input())
-        print("The distance between the two points is: " + str(distance(lat1, lon1, lat2, lon2)))
-        print("\nPress any key to return to menu")
-        input()
-    elif selection == '5':
-        register(1234)
-    elif selection == '6':
-        pingDB(1234, 12.00, 21.00)
-    elif selection == '7':
-        print("\nPlease enter the phone number that has been covid affected")
-        covidLOC(input())    
-    elif selection == '0':
-        print("Goodbye")
-        exit()
+    #for debugging
+    #print(str(phone_number) + "\n" + str(latitude) + "\n" + str(longitude))
+
+    return jsonify(response_value_1=1, response_value_2=True)
+
+
+@app.route('/auth_request_code', methods=['POST'])
+def auth_request_code():
+    jsondata = request.json
+    data = json.loads(jsondata)
+    phone_number = data['phone_number']
+    auth_code = sendSMSCode(phone_number)
+    store_code(auth_code)
+    sent_msg = {'msg': "Text message has been sent"}
+    return json.dumps(sent_msg)
+
+
+@app.route('/auth_check_code', methods=['POST'])
+def auth_check_code():
+    jsondata = request.json
+    data = json.loads(jsondata)
+    phone_number = data['phone_number']
+    received_code = data['code']
+    code = read_code()#add functionality through db not .txt, have hashed ph# alongside
+    if(str(received_code) == str(code)):
+        print("codes match")
+        #commented out for not having db setup
+        #register(phone_number)
+        match_msg = {'msg': True}
     else:
-        print("Invalid user input")
-#######################################################################################################################
+        match_msg = {'msg': False}
+    return json.dumps(match_msg)
+
+@app.route('/nurse_logon', methods=['POST'])
+def nurse_logon():
+    jsondata = request.json
+    data = json.loads(jsondata)
+    password = data['password']
+    # this is simply the hash_string of 87654321, the current nurse password
+    if(hash_string(password) == \
+            'e24df920078c3dd4e7e8d2442f00e5c9ab2a231bb3918d65cc50906e49ecaef4'):
+        print("nurse logon successful")
+        msg = {'msg': True}
+    else:
+        print("nurse logon failed")
+        msg = {'msg': False}
+    return json.dumps(msg)
+
+
+@app.route('/nurse_add_data', methods=['POST'])
+def nurse_add_data():
+    jsondata = request.json
+    data = json.loads(jsondata)
+    phone_number = data['phone_number']
+    #commented out for not having db setup
+    #covidLOC(phone_number)
+    return
+
+
+app.run(host="0.0.0.0",debug=True)
