@@ -56,7 +56,7 @@ def pingDB(phone_number, long, lat):  # Pings user location to the database
     db = conDB()
     query = {"Hash": hashed}
     inpvalues = {"$push": {"LocDate": {"Long": long, "Lat": lat, "Date": date}}}
-    db.users.update_many(query, inpvalues)
+    db.users.update_one(query, inpvalues)
 
 
 def declutterDB():  # Removes data from the DB that has existed for over two weeks
