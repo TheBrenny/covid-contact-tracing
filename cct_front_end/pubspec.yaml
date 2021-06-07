@@ -9,6 +9,11 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.2
   flutter_platform_widgets: ^1.9.0
+  sms_autofill: ^2.0.0
+  http: ^0.13.3
+  shared_preferences: ^2.0.6
+  flutter_background_geolocation: ^2.0.5
+  google_maps_flutter: ^2.0.6
 dev_dependencies:
   flutter_test:
     sdk: flutter
