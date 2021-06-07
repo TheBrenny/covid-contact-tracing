@@ -50,14 +50,13 @@ def register(phone_number):  # Adds registered user to the database
 
 
 def pingDB(phone_number, long, lat):  # Pings user location to the database
-    encrypted = encrypt(phone_number)
+    hashed = hash_string(phone_number)
     current = datetime.now()
     date = datetime(current.year, current.month, current.day)
     db = conDB()
-    query = {"PhoneNumber": encrypted}
+    query = {"Hash": hashed}
     inpvalues = {"$push": {"LocDate": {"Long": long, "Lat": lat, "Date": date}}}
-    #print(encrypted)
-    db.users.update_one(query, inpvalues)
+    db.users.update_many(query, inpvalues)
 
 
 def declutterDB():  # Removes data from the DB that has existed for over two weeks
@@ -66,9 +65,33 @@ def declutterDB():  # Removes data from the DB that has existed for over two wee
     d = timedelta(days=14)
     dcDate = datenow - d
     inpvalues = {"$pull": {"LocDate": {"LocDate.Date": {"$gte": dcDate}}}}
-    multi = {"multi": True}
     db = conDB()
-    db.users.update_many({}, inpvalues, multi)
+    db.users.update_many({}, inpvalues)
+    time.sleep(86400)
+    declutterDB()
+    
+
+def codeWrite(phone_number, code):
+    hashed = hash_string(phone_number)
+    db = conDB()
+    query = {"Hash": hashed}
+    inpvalues = {"$set": {"Code": code}}
+    db.users.update_one(query, inpvalues)
+
+
+def codeRead(phone_number):
+    hashed = hash_string(phone_number)
+    db = conDB()
+    query = {"Hash": hashed}
+    filterLoc = {"_id": 0, "PhoneNumber": 0, "Hash": 0, "LocDate": 0}
+    code = db.users.find(query, filterLoc)
+    fCode = ""
+    for x in code:
+        if 'Code' in x:
+            fCode = x["Code"]
+    inpvalues = {"$unset": {"Code": ""}}
+    db.users.update_one(query, inpvalues)
+    return fCode
 
 
 def covidLOC(phone_number):  # Creates array of covid affected locations. Runs covid system
@@ -116,20 +139,18 @@ def read_code():
     fr = open("codes.txt", "r")
     out_code = fr.read()
     return out_code
+
+
+class ScheduleThread(threading.Thread):
+
+    def __init__(self, function):
+        threading.Thread.__init__(self)
+        self.runnable = function
+        self.daemon = True
+
+    def run(self):
+        self.runnable()
 ########################################DISTANCE CALCULATION###########################################################
-def distance(lat1, lon1, lat2, lon2):#uses haversine formula, not convinced it works
-    R = 6373
-    lat1 = math.radians(lat1)
-    lat2 = math.radians(lat2)
-    lon1 = math.radians(lon1)
-    lon2 = math.radians(lon2)
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return R * c
-
-
 def squareRange(lat, lon):#outputs a set of points that make up a square of side length 50m
     latmin = float(lat) - 0.225
     latmax = float(lat) + 0.225
@@ -255,5 +276,6 @@ def nurse_add_data():
     #covidLOC(phone_number)
     return
 
-
+thread = ScheduleThread(declutterDB)
+thread.start()
 app.run(host="0.0.0.0",debug=True)
