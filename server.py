@@ -13,8 +13,11 @@ from twilio.rest import Client
 from flask import Flask
 from flask import request
 from flask import jsonify
-from flask import make_response
+import flask
 import json
+import threading
+import os
+import time
 
 
 ########################################SMS FUNCTIONS##################################################################
@@ -99,7 +102,8 @@ def codeRead(phone_number):
     db.users.update_one(query, inpvalues)
     inpvalues = {"$unset": {"Signature": ""}}
     db.users.update_one(query, inpvalues)
-    return fCode, signature
+    out = {'fCode': fCode, 'signature': signature}
+    return out
 
 
 def covidLOC(phone_number):  # Creates array of covid affected locations. Runs covid system
@@ -137,19 +141,6 @@ def covidSystem(locations):  # TBC Will alert all potentially affected people
         covidAlert(x)
 
 
-# Change these to use mongo!
-def store_code(phone_number, signature, code):
-    fw = open("codes.txt", 'w')
-    fw.write(str(code))
-    fw.close()
-    return
-
-def read_code():
-    fr = open("codes.txt", "r")
-    out_code = fr.read()
-    return out_code
-
-
 class ScheduleThread(threading.Thread):
 
     def __init__(self, function):
@@ -159,6 +150,7 @@ class ScheduleThread(threading.Thread):
 
     def run(self):
         self.runnable()
+
 ########################################DISTANCE CALCULATION###########################################################
 def squareRange(lat, lon):#outputs a set of points that make up a square of side length 50m
     latmin = float(lat) - 0.225
@@ -224,12 +216,11 @@ def data_entry():
     phone_number = data['phone_number']
     longitude = data['lon']
     latitude = data['lat']
-    time = data['time']
     #commented out for not having db setup
     #pingDB(phone_number, longitude, latitude)
 
     #for debugging
-    #print(str(phone_number) + "\n" + str(latitude) + "\n" + str(longitude))
+    print(str(phone_number) + "\n" + str(latitude) + "\n" + str(longitude))
 
     return jsonify(response_value_1=1, response_value_2=True)
 
@@ -241,7 +232,7 @@ def auth_request_code():
     phone_number = data['phone_number']
     signature = data['signature']
     auth_code = sendSMSCode(phone_number)
-    store_code(phone_number, signature, auth_code)
+    codeWrite(phone_number, signature, auth_code)
     sent_msg = {'msg': "Text message has been sent"}
     # TODO: Send text message
     return json.dumps(sent_msg)
@@ -254,31 +245,33 @@ def auth_check_code():
     phone_number = data['phone_number']
     signature = data['signature']
     received_code = data['code']
-    code = read_code()#add functionality through db not .txt, have hashed ph# alongside
+    resp = codeRead()
+    code = resp['fCode']
+    sig = resp['signature']
     # TODO: add more checks (similar to the mock server)
-    if(str(received_code) == str(code)):
+    if(str(received_code) == str(code) and str(signature) == str(sig)):
         print("codes match")
         #commented out for not having db setup
         #register(phone_number)
-        match_msg = {'msg': True}
+        return flask.Response(status=201)
     else:
-        match_msg = {'msg': False}
-    return json.dumps(match_msg)
+        return flask.Response(status=200)
 
 @app.route('/nurse_logon', methods=['POST'])
 def nurse_logon():
     jsondata = request.json
     data = json.loads(jsondata)
     password = data['password']
+    print(password)
     # this is simply the hash_string of 87654321, the current nurse password
     if(hash_string(password) == \
             'e24df920078c3dd4e7e8d2442f00e5c9ab2a231bb3918d65cc50906e49ecaef4'):
         print("nurse logon successful")
-        msg = {'msg': True}
+        return flask.Response(status=201)
     else:
         print("nurse logon failed")
-        msg = {'msg': False}
-    return json.dumps(msg)
+        return flask.Response(status=200)
+
 
 
 @app.route('/nurse_add_data', methods=['POST'])
