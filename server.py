@@ -233,6 +233,7 @@ def auth_request_code():
     signature = data['signature']
     auth_code = sendSMSCode(phone_number)
     codeWrite(phone_number, signature, auth_code)
+    print("{}: {} ({})".format(phone_number, auth_code, signature))
     sent_msg = {'msg': "Text message has been sent"}
     # TODO: Send text message
     return json.dumps(sent_msg)
