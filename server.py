@@ -27,9 +27,10 @@ def sendSMS(message_string, phone_number):
         .create(body=message_string,from_='+12068232616',to=phone_number)
 
 
-def sendSMSCode(phone_number):
-    code = random.randint(100000, 999999)
-    message = "Your authentication code for COVID-Contact-Tracing is: " + str(code)
+def sendSMSCode(phone_number, signature):
+    phone_number = "+61{}".format(phone_number[1:])
+    code = ''.join(["{}".format(random.randint(0, 9)) for _ in range(0, 6)])
+    message = "<#> COVID Contact Tracing\nVerifcation Code: {1}\n{2}".format(code, signature)
     sendSMS(message, phone_number)
     return code
 
@@ -231,7 +232,7 @@ def auth_request_code():
     # data = json.loads(jsondata)
     phone_number = data['phone_number']
     signature = data['signature']
-    auth_code = sendSMSCode(phone_number)
+    auth_code = sendSMSCode(phone_number, signature)
     codeWrite(phone_number, signature, auth_code)
     print("{}: {} ({})".format(phone_number, auth_code, signature))
     sent_msg = {'msg': "Text message has been sent"}
