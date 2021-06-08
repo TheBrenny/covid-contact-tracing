@@ -247,7 +247,7 @@ def auth_check_code():
     phone_number = data['phone_number']
     signature = data['signature']
     received_code = data['code']
-    resp = codeRead()
+    resp = codeRead(phone_number)
     code = resp['fCode']
     sig = resp['signature']
     # TODO: add more checks (similar to the mock server)
