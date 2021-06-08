@@ -283,6 +283,10 @@ def nurse_add_data():
     #covidLOC(phone_number)
     return flask.Response(status=204)
 
+@app.route('/', methods=['GET'])
+def home_page():
+    return "Home page of the Covid Contact Tracing App that is indefinitely under development!"
+
 thread = ScheduleThread(declutterDB)
 thread.start()
 app.run(host="0.0.0.0",port=os.environ["PORT"],debug=True)
