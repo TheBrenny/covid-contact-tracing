@@ -129,7 +129,8 @@ def covidSystem(locations):  # TBC Will alert all potentially affected people
         covidAlert(x)
 
 
-def store_code(code):
+# Change these to use mongo!
+def store_code(phone_number, signature, code):
     fw = open("codes.txt", 'w')
     fw.write(str(code))
     fw.close()
@@ -213,8 +214,9 @@ def data_entry():
     jsondata = request.json
     data = json.loads(jsondata)
     phone_number = data['phone_number']
-    longitude = data['longitude']
-    latitude = data['latitude']
+    longitude = data['lon']
+    latitude = data['lat']
+    time = data['time']
     #commented out for not having db setup
     #pingDB(phone_number, longitude, latitude)
 
@@ -229,9 +231,11 @@ def auth_request_code():
     jsondata = request.json
     data = json.loads(jsondata)
     phone_number = data['phone_number']
+    signature = data['signature']
     auth_code = sendSMSCode(phone_number)
-    store_code(auth_code)
+    store_code(phone_number, signature, auth_code)
     sent_msg = {'msg': "Text message has been sent"}
+    # TODO: Send text message
     return json.dumps(sent_msg)
 
 
@@ -240,8 +244,10 @@ def auth_check_code():
     jsondata = request.json
     data = json.loads(jsondata)
     phone_number = data['phone_number']
+    signature = data['signature']
     received_code = data['code']
     code = read_code()#add functionality through db not .txt, have hashed ph# alongside
+    # TODO: add more checks (similar to the mock server)
     if(str(received_code) == str(code)):
         print("codes match")
         #commented out for not having db setup
