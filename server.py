@@ -30,7 +30,7 @@ def sendSMS(message_string, phone_number):
 def sendSMSCode(phone_number, signature):
     phone_number = "+61{}".format(phone_number[1:])
     code = ''.join(["{}".format(random.randint(0, 9)) for _ in range(0, 6)])
-    message = "<#> COVID Contact Tracing\nVerifcation Code: {1}\n{2}".format(code, signature)
+    message = "<#> COVID Contact Tracing\nVerifcation Code: {0}\n{1}".format(code, signature)
     sendSMS(message, phone_number)
     return code
 
