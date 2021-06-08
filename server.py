@@ -95,6 +95,8 @@ def codeRead(phone_number):
             signature = x["Signature"]
     inpvalues = {"$unset": {"Code": ""}}
     db.users.update_one(query, inpvalues)
+    inpvalues = {"$unset": {"Signature": ""}}
+    db.users.update_one(query, inpvalues)
     return fCode, signature
 
 
