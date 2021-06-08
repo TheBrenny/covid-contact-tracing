@@ -7,9 +7,9 @@ conv = {'phone_number': '+614xxxxxx',
         'code': 549660,
         'password': '87654321'}
 s = json.dumps(conv)
-#res = requests.post("http://127.0.0.1:5000/auth_request_code", json=s)
+#res = requests.post("https://pfs-cct-demo.herokuapp.com/auth_request_code", json=s)
 
-#res = requests.post("http://127.0.0.1:5000/auth_check_code", json=s)
+#res = requests.post("https://pfs-cct-demo.herokuapp.com/auth_check_code", json=s)
 
-res = requests.post("http://192.168.1.15:5000/nurse_logon", json=s)#change to https when running within heroko
+res = requests.post("https://pfs-cct-demo.herokuapp.com/nurse_logon", json=s)#change to https when running within heroko
 print(str(res))

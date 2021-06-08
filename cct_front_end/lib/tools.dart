@@ -3,7 +3,7 @@ import 'dart:math' as Math;
 import 'package:location/location.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String server = "http://10.0.2.2:80";
+const String server = "https://pfs-cct-demo.herokuapp.com";
 
 class Endpoint {
   static const Endpoint requestAuth = Endpoint._("/auth_request_code");

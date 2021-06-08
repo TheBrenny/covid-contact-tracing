@@ -8,8 +8,7 @@ while 1:
     password = input() #87654321
     password_dict = {'password': password}
     password_json = json.dumps(password_dict)
-    # change to https when running within heroku, change ip
-    res = requests.post("http://192.168.1.15:42069/nurse_logon", json=password_json)
+    res = requests.post("https://pfs-cct-demo.herokuapp.com/nurse_logon", json=password_json)
 
     print(str(res))
     if "201" in str(res):
@@ -28,8 +27,7 @@ while 1:
         ph = input()
         ph_dict = {'phone_number': ph}
         ph_json = json.dumps(ph_dict)
-        # change to https when running within heroku, change ip
-        res = requests.post("http://192.168.1.15:5000/nurse_add_data", json=ph_dict)
+        res = requests.post("https://pfs-cct-demo.herokuapp.com/nurse_add_data", json=ph_dict)
         print(ph_json)
         print("\nAlerts sent, enter any key to return to menu")
         input()

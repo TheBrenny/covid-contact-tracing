@@ -1,17 +1,44 @@
-This thing is so you can track whether or not you have covid because you might have crossed paths with someone who might have covid.
+# Covid Tracker
+> Passively and securely track your location so when a new hotspot is defined, you can become notified if you've been exposed!
 
-Necessary packages:
-__pymongo__
-(pip install pymongo)
+## Requirements
 
-__twilio__
-(pip install twilio)
+Client side:
+- `adb`
+- `flutter`
+- `dart`
+  - `nodejs` for testing
 
-__node.js__
-https://nodejs.org/en/download/
+Server side:
+- `python3`
+- `pip`
 
-__cryptography__
-(pip install cryptography)
+## Installation
 
-Flask
-(pip install flask)
+### Front End:
+~~Download from the Google Play Store or the Apple App Store~~
+
+Otherwise:
+```shell
+$ cd cct_front_end
+$ flutter build apk
+$ adb install build\app\outputs\apk\release\app-release.apk
+```
+
+### Front End Mock Server
+
+```shell
+$ cd mock_server
+$ npm install
+```
+
+### Server:
+```shell
+$ pip install -r requirements.txt
+```
+
+## Usage
+
+- Run server: `python3 server.py`
+- Run app: `flutter run`
+- Run mock server: `cd mock_server && npm start`
