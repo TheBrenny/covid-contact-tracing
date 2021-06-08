@@ -1,3 +1,4 @@
+import os
 import threading
 import hashlib
 import base64
@@ -291,4 +292,4 @@ def nurse_add_data():
 
 thread = ScheduleThread(declutterDB)
 thread.start()
-app.run(host="0.0.0.0",debug=True)
+app.run(host="0.0.0.0",port=os.environ["PORT"],debug=True)
