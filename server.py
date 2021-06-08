@@ -197,7 +197,7 @@ def hash_and_salt_string(input):
 count  = 0
 while 1:
     print("Enter password: ")
-    password = input()
+    password = "12345678" #input()
     # this is simply the hash_string of 12345678, the current admin password
     if(hash_string(password) == \
             'ef797c8118f02dfb649607dd5d3f8c7623048c9c063d532cc95c5ed7a898a64f'):
