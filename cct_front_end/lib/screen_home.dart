@@ -36,12 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _initLocationService() async {
-    await _location.changeSettings(
-      distanceFilter: 0,
-      interval: 17 * 1000,
-      accuracy: LocationAccuracy.high,
-    ); // 100 metre distance and one minute interval
-
     _serviceEnabled = await _location.serviceEnabled();
     if (!_serviceEnabled) {
       _serviceEnabled = await _location.requestService();
@@ -54,6 +48,12 @@ class _HomeScreenState extends State<HomeScreen> {
       _permissionGranted = await _location.requestPermission();
       if (_permissionGranted != PermissionStatus.granted) return;
     }
+
+    await _location.changeSettings(
+      distanceFilter: 0,
+      interval: 17 * 1000,
+      accuracy: LocationAccuracy.high,
+    ); // 100 metre distance and one minute interval
 
     _locationListener = _location.onLocationChanged.listen((LocationData loc) async {
       // use it somehow -- store and send to the server?
