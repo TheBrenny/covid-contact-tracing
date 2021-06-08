@@ -1,0 +1,4 @@
+pymongo
+twilio
+cryptography
+flask
