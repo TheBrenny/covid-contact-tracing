@@ -71,11 +71,13 @@ def declutterDB():  # Removes data from the DB that has existed for over two wee
     declutterDB()
     
 
-def codeWrite(phone_number, code):
+def codeWrite(phone_number, code, signature):
     hashed = hash_string(phone_number)
     db = conDB()
     query = {"Hash": hashed}
     inpvalues = {"$set": {"Code": code}}
+    db.users.update_one(query, inpvalues)
+    inpvalues = {"$set": {"Signature": signature}}
     db.users.update_one(query, inpvalues)
 
 
@@ -86,12 +88,14 @@ def codeRead(phone_number):
     filterLoc = {"_id": 0, "PhoneNumber": 0, "Hash": 0, "LocDate": 0}
     code = db.users.find(query, filterLoc)
     fCode = ""
+    signature = ""
     for x in code:
         if 'Code' in x:
             fCode = x["Code"]
+            signature = x["Signature"]
     inpvalues = {"$unset": {"Code": ""}}
     db.users.update_one(query, inpvalues)
-    return fCode
+    return fCode, signature
 
 
 def covidLOC(phone_number):  # Creates array of covid affected locations. Runs covid system
