@@ -11,7 +11,7 @@ while 1:
     res = requests.post("https://pfs-cct-demo.herokuapp.com/nurse_logon", json=password_json)
 
     print(str(res))
-    if "201" in str(res):
+    if 200 <= res.status_code < 300:
         print("nurse logon successful")
         break
     else:

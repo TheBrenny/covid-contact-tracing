@@ -253,9 +253,9 @@ def auth_check_code():
         print("codes match")
         #commented out for not having db setup
         #register(phone_number)
-        return flask.Response(status=201)
+        return flask.Response(status=204)
     else:
-        return flask.Response(status=200)
+        return flask.Response(status=401)
 
 @app.route('/nurse_logon', methods=['POST'])
 def nurse_logon():
@@ -267,10 +267,10 @@ def nurse_logon():
     if(hash_string(password) == \
             'e24df920078c3dd4e7e8d2442f00e5c9ab2a231bb3918d65cc50906e49ecaef4'):
         print("nurse logon successful")
-        return flask.Response(status=201)
+        return flask.Response(status=204)
     else:
         print("nurse logon failed")
-        return flask.Response(status=200)
+        return flask.Response(status=401)
 
 
 
@@ -281,7 +281,7 @@ def nurse_add_data():
     phone_number = data['phone_number']
     #commented out for not having db setup
     #covidLOC(phone_number)
-    return
+    return flask.Response(status=204)
 
 thread = ScheduleThread(declutterDB)
 thread.start()
