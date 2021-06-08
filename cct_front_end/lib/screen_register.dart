@@ -155,7 +155,7 @@ class _ActivateScreenState extends State<ActivateScreen> {
       body: jsonEncode(data),
     );
 
-    if (response.statusCode == 200) {
+    if (200 <= response.statusCode && response.statusCode < 300) {
       _codeHasError = false;
       await tools.setPhoneNumber(_phoneNumber);
       Navigator.popUntil(context, ModalRoute.withName('/'));

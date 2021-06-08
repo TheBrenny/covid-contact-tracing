@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: jsonEncode(data),
     );
 
-    return response.statusCode == 200;
+    return 200 <= response.statusCode && response.statusCode < 300;
   }
 
   void _handleRegistration(BuildContext context) async {
