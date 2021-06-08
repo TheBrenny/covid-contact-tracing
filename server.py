@@ -211,8 +211,8 @@ app = Flask(__name__)
 #############################################HTTPS/Flask server methods###########################################################
 @app.route('/data_entry', methods=['POST', 'GET'])
 def data_entry():
-    jsondata = request.json
-    data = json.loads(jsondata)
+    data = request.json
+    # data = json.loads(jsondata)
     phone_number = data['phone_number']
     longitude = data['lon']
     latitude = data['lat']
@@ -227,8 +227,8 @@ def data_entry():
 
 @app.route('/auth_request_code', methods=['POST'])
 def auth_request_code():
-    jsondata = request.json
-    data = json.loads(jsondata)
+    data = request.json
+    # data = json.loads(jsondata)
     phone_number = data['phone_number']
     signature = data['signature']
     auth_code = sendSMSCode(phone_number)
@@ -241,8 +241,8 @@ def auth_request_code():
 
 @app.route('/auth_check_code', methods=['POST'])
 def auth_check_code():
-    jsondata = request.json
-    data = json.loads(jsondata)
+    data = request.json
+    # data = json.loads(jsondata)
     phone_number = data['phone_number']
     signature = data['signature']
     received_code = data['code']
