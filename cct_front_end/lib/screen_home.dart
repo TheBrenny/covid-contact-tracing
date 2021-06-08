@@ -1,5 +1,6 @@
 import 'dart:async';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:cct_front_end/covid_button.dart';
 import 'package:cct_front_end/tools.dart' as tools;
 import 'package:flutter/material.dart';
@@ -8,7 +9,7 @@ import 'package:location/location.dart';
 import 'package:location_permissions/location_permissions.dart' as lp;
 import 'package:shared_preferences/shared_preferences.dart';
 
-const maxDistance = 1; // 1km
+const maxDistance = 0.6; // 700 metres
 const maxTimegap = 30 * 1000; // 30 seconds
 
 class HomeScreen extends StatefulWidget {
@@ -17,7 +18,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _registered = false;
+  Future<bool> get _registered async => tools.isRegistered();
   Location _location = new Location();
   LocationData? _lastLocation;
   bool _serviceEnabled = false;
@@ -31,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void dispose() {
     super.dispose();
-    // _locationListener.cancel();
+    _locationListener.cancel();
   }
 
   void _initLocationService() async {
@@ -54,21 +55,20 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_permissionGranted != PermissionStatus.granted) return;
     }
 
-    _locationListener = _location.onLocationChanged.listen((LocationData loc) {
+    _locationListener = _location.onLocationChanged.listen((LocationData loc) async {
       // use it somehow -- store and send to the server?
       if (_lastLocation == null)
-        _updateLocation(loc);
+        await _updateLocation(loc);
       else {
-        print(tools.getDistance(_lastLocation!, loc));
         bool update = tools.getDistance(_lastLocation!, loc) > maxDistance;
         update = update && (tools.getTimegap(_lastLocation!, loc) > maxTimegap);
-        if (update) _updateLocation(loc);
+        if (update) await _updateLocation(loc);
       }
     });
     _location.enableBackgroundMode(enable: true).catchError((err) async {
       if (err.code == "PERMISSION_DENIED_NEVER_ASK") {
         bool showRationale = await lp.LocationPermissions().shouldShowRequestPermissionRationale(permissionLevel: lp.LocationPermissionLevel.locationAlways);
-        if(showRationale) {
+        if (showRationale) {
           // TODO: Actually show a rationale for spying on the user. it's legit, I swear.
         }
         return lp.LocationPermissions().openAppSettings();
@@ -77,13 +77,25 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _updateLocation(LocationData loc) {
+  Future<bool> _updateLocation(LocationData loc) async {
+    // update our last loc, and add this location to our history
     _lastLocation = loc;
-    print(loc.accuracy);
-    print(loc.longitude);
-    print(loc.latitude);
-    print(DateTime.fromMillisecondsSinceEpoch(loc.time!.toInt()));
-    print(loc.provider);
+    String? locJson = await tools.addLocation(loc);
+
+    // If we aren't regod or the json is broken
+    if (!(await _registered) || locJson == null) return false;
+
+    // otherwise, send to server
+    Uri url = Uri.parse(tools.Endpoint.dataEntry.url);
+    Map<String, dynamic> data = {"phone_number": (await tools.getPhoneNumber())!};
+    data.addAll(Map.castFrom(jsonDecode(locJson)));
+    http.Response response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(data),
+    );
+
+    return response.statusCode == 200;
   }
 
   void _handleRegistration(BuildContext context) async {
@@ -118,26 +130,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         FutureBuilder(
-                          future: SharedPreferences.getInstance().then((prefs) => (prefs.getBool("registered") ?? false)),
+                          future: _registered,
                           builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
                             Widget widget;
 
                             if (snapshot.hasData) {
-                              _registered = snapshot.data!;
-
-                              if (_registered) {
-                                widget = CovidButton(
-                                  "My Location Data",
-                                  () => _showMyData(context),
-                                  fontSizeFactor: 1.5,
-                                );
-                              } else {
-                                widget = CovidButton(
-                                  "Register",
-                                  () => _handleRegistration(context),
-                                  fontSizeFactor: 1.5,
-                                );
-                              }
+                              bool res = snapshot.data ?? false;
+                              // Makes a dynamic widget
+                              widget = CovidButton(
+                                res ? "My Location Data" : "Register",
+                                res ? (() => _showMyData(context)) : (() => _handleRegistration(context)),
+                                fontSizeFactor: 1.5,
+                              );
                             } else if (snapshot.hasError) {
                               widget = Icon(Icons.error_outline, color: Colors.red);
                             } else {
@@ -157,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         CovidButton(
                           "COVID Information",
-                          () => print("Pressed: R"),
+                          () => print("Pressed: Covid INFO"),
                         ),
                         CovidButton(
                           "About",

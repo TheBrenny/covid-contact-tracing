@@ -15,12 +15,6 @@
             "flutterMode": "debug"
         },
         {
-            "name": "cct_front_end",
-            "cwd": "cct_front_end",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
             "name": "cct_front_end (profile mode)",
             "cwd": "cct_front_end",
             "request": "launch",

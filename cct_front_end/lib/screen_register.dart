@@ -2,15 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sms_autofill/sms_autofill.dart';
+import 'package:cct_front_end/tools.dart' as tools;
 
-const String server = "http://10.0.2.2:80";
-const Map<String, String> endpoints = {
-  "requestAuth": server + "/auth_request_code",
-  "checkAuth": server + "/auth_check_code",
-  "dataEntry": server + "/data_entry",
-};
 final RegExp phoneRegex = RegExp(r"^04\d{8}$");
 
 class RegisterScreen extends StatefulWidget {
@@ -65,22 +59,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 _signature = await SmsAutoFill().getAppSignature;
 
-                Navigator.pushNamed(context, '/register/activate', arguments: {
-                  "phoneNumber": _textCtrl.text,
-                  "signature": _signature,
-                });
-
-                Uri url = Uri.parse(endpoints['requestAuth']!);
-                Map<String, String> data = {
-                  "phone_number": _textCtrl.text,
-                  "signature": _signature,
-                };
-                Map<String, String> headers = {
-                  "Content-Type": "application/json",
-                };
+                Map<String, String> data = {"phone_number": _textCtrl.text, "signature": _signature};
+                Navigator.pushNamed(context, '/register/activate', arguments: data);
+                Uri url = Uri.parse(tools.Endpoint.requestAuth.url);
+                // ignore: unused_local_variable
                 http.Response response = await http.post(
                   url,
-                  headers: headers,
+                  headers: {"Content-Type": "application/json"},
                   body: jsonEncode(data),
                 );
               },
@@ -120,7 +105,7 @@ class _ActivateScreenState extends State<ActivateScreen> {
     const length = 6;
     Map<String, String> args = ModalRoute.of(context)!.settings.arguments as Map<String, String>;
     _signature = args["signature"]!;
-    _phoneNumber = args["phoneNumber"]!;
+    _phoneNumber = args["phone_number"]!;
 
     return PlatformScaffold(
       appBar: PlatformAppBar(
@@ -136,7 +121,6 @@ class _ActivateScreenState extends State<ActivateScreen> {
               codeLength: length,
               currentCode: _code,
               onCodeChanged: (v) {
-                print(v);
                 _code = v!;
                 if (_code.length == length) _submitCode(context); //submit;
               },
@@ -156,7 +140,7 @@ class _ActivateScreenState extends State<ActivateScreen> {
   }
 
   void _submitCode(BuildContext context) async {
-    Uri url = Uri.parse(endpoints['checkAuth']!);
+    Uri url = Uri.parse(tools.Endpoint.checkAuth.url);
     Map<String, String> data = {
       "phone_number": _phoneNumber,
       "signature": _signature,
@@ -171,12 +155,9 @@ class _ActivateScreenState extends State<ActivateScreen> {
       body: jsonEncode(data),
     );
 
-    print(response.statusCode);
     if (response.statusCode == 200) {
       _codeHasError = false;
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool("registered", true);
-      
+      await tools.setPhoneNumber(_phoneNumber);
       Navigator.popUntil(context, ModalRoute.withName('/'));
     } else {
       // say bad code?

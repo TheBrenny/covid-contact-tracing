@@ -72,7 +72,13 @@ async function handleAuthCheck(req, res) {
 }
 
 async function dataEntry(req, res) {
+    let phone = req.body.phone_number;
+    let lon = req.body.lon;
+    let lat = req.body.lat;
+    let time = req.body.time;
+    console.log(req.body);
 
+    res.status(200).end();
 }
 
 async function send(d) {
