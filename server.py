@@ -43,7 +43,7 @@ def covidAlert(phone_number):
 #########################################DB COMMANDS###################################################################
 def conDB():  # Creates a connection to the database **ONLY WORKS ON LOCALHOST**
     conn = pymongo.MongoClient(os.environ['DB_URL'])
-    db = conn[os.environ['DB_CLUSTER']]
+    db = conn.pfsdb
     return db
 
 
