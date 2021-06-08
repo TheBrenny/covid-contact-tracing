@@ -1,3 +1,5 @@
+import os
+import threading
 import hashlib
 import base64
 from cryptography.fernet import Fernet
@@ -188,7 +190,7 @@ def hash_and_salt_string(input):
 count  = 0
 while 1:
     print("Enter password: ")
-    password = input()
+    password = "12345678" #input()
     # this is simply the hash_string of 12345678, the current admin password
     if(hash_string(password) == \
             'ef797c8118f02dfb649607dd5d3f8c7623048c9c063d532cc95c5ed7a898a64f'):
@@ -283,4 +285,4 @@ def nurse_add_data():
 
 thread = ScheduleThread(declutterDB)
 thread.start()
-app.run(host="0.0.0.0",port=os.environ["PORT"], debug=True)
+app.run(host="0.0.0.0",port=os.environ["PORT"],debug=True)
