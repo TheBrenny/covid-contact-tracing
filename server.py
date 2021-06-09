@@ -41,8 +41,8 @@ def covidAlert(phone_number):
     sendSMS(message, phone_number)
 
 #########################################DB COMMANDS###################################################################
+conn = pymongo.MongoClient(os.environ['DB_URL'])
 def conDB():  # Creates a connection to the database **ONLY WORKS ON LOCALHOST**
-    conn = pymongo.MongoClient(os.environ['DB_URL'])
     db = conn.pfsdb
     return db
 
@@ -80,31 +80,27 @@ def declutterDB():  # Removes data from the DB that has existed for over two wee
 def codeWrite(phone_number, code, signature):
     hashed = hash_string(phone_number)
     db = conDB()
-    query = {"Hash": hashed}
-    inpvalues = {"$set": {"Code": code}}
-    db.users.update_one(query, inpvalues)
-    inpvalues = {"$set": {"Signature": signature}}
-    db.users.update_one(query, inpvalues)
+    # query = {"Hash": hashed}
+    # inpvalues = {"$set": {"Code": code}}
+    ins = {
+        "Hash": hashed,
+        "Code": code,
+        "Signature": signature
+    }
+    db.auth_codes.insert_one(ins)
 
 
-def codeRead(phone_number):
+def codeRead(phone_number, code, signature):
     hashed = hash_string(phone_number)
     db = conDB()
-    query = {"Hash": hashed}
-    filterLoc = {"_id": 0, "PhoneNumber": 0, "Hash": 0, "LocDate": 0}
-    code = db.users.find(query, filterLoc)
-    fCode = ""
-    signature = ""
-    for x in code:
-        if 'Code' in x:
-            fCode = x["Code"]
-            signature = x["Signature"]
-    inpvalues = {"$unset": {"Code": ""}}
-    db.users.update_one(query, inpvalues)
-    inpvalues = {"$unset": {"Signature": ""}}
-    db.users.update_one(query, inpvalues)
-    out = {'fCode': fCode, 'signature': signature}
-    return out
+    query = {
+        "Hash": hashed,
+        "Code": code,
+        "Signature": signature
+    }
+    found = db.auth_codes.find_one_and_delete(query)
+    print(found)
+    return found != None
 
 
 def covidLOC(phone_number):  # Creates array of covid affected locations. Runs covid system
@@ -232,9 +228,9 @@ def auth_request_code():
     # data = json.loads(jsondata)
     phone_number = data['phone_number']
     signature = data['signature']
-    auth_code = sendSMSCode(phone_number, signature)
-    codeWrite(phone_number, signature, auth_code)
-    print("{}: {} ({})".format(phone_number, auth_code, signature))
+    code = sendSMSCode(phone_number, signature)
+    codeWrite(phone_number, code, signature)
+    print("{}: {} ({})".format(phone_number, code, signature))
     sent_msg = {'msg': "Text message has been sent"}
     # TODO: Send text message
     return json.dumps(sent_msg)
@@ -245,24 +241,19 @@ def auth_check_code():
     data = request.json
     # data = json.loads(jsondata)
     phone_number = data['phone_number']
+    code = data['code']
     signature = data['signature']
-    received_code = data['code']
-    resp = codeRead(phone_number)
-    code = resp['fCode']
-    sig = resp['signature']
-    # TODO: add more checks (similar to the mock server)
-    if(str(received_code) == str(code) and str(signature) == str(sig)):
+    resp = codeRead(phone_number, code, signature)
+    if(resp):
         print("codes match")
-        #commented out for not having db setup
-        #register(phone_number)
+        register(phone_number)
         return flask.Response(status=204)
     else:
         return flask.Response(status=401)
 
 @app.route('/nurse_logon', methods=['POST'])
 def nurse_logon():
-    jsondata = request.json
-    data = json.loads(jsondata)
+    data = request.json
     password = data['password']
     print(password)
     # this is simply the hash_string of 87654321, the current nurse password
