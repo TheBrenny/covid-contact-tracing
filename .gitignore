@@ -1,3 +1,6 @@
+# Not Flutter lib
+!cct_front_end/lib/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

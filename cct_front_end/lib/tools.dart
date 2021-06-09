@@ -1,3 +1,4 @@
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math' as Math;
 import 'package:location/location.dart';
@@ -49,7 +50,6 @@ Future<bool> setPhoneNumber(String number) async {
   return SharedPreferences.getInstance().then((p) => p.setString("phone_number", number));
 }
 
-
 Future<List<String>?> getLocations() async {
   return await SharedPreferences.getInstance().then((value) => value.getStringList("locations")).catchError((e) {
     print(e);
@@ -71,4 +71,8 @@ Future<String?> addLocation(LocationData loc) async {
 Future<List<String>?> removeOldLocations() async {
   List<String>? locs = (await getLocations()) ?? [];
   locs.removeWhere((e) => jsonDecode(e).time < DateTime.now().millisecondsSinceEpoch - fourteenDays);
+}
+
+Future<http.Response> pingServer() async {
+  return http.head(Uri.parse(server));
 }

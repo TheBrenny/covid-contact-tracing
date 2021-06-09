@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Future<bool> get _registered async => tools.isRegistered();
+  Future<bool> get _connected async => tools.pingServer().then((r) => 200 <= r.statusCode && r.statusCode < 300);
   Location _location = new Location();
   LocationData? _lastLocation;
   bool _serviceEnabled = false;
@@ -130,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         FutureBuilder(
-                          future: _registered,
+                          future: Future.wait([_registered, _connected]).then((i) => i.every((e) => e == true)),
                           builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
                             Widget widget;
 
