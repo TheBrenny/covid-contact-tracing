@@ -12,7 +12,6 @@ import pymongo
 from twilio.rest import Client
 from flask import Flask
 from flask import request
-from flask import jsonify
 import flask
 import json
 import threading
@@ -265,8 +264,7 @@ def nurse_logon():
 
 @app.route('/nurse_add_data', methods=['POST'])
 def nurse_add_data():
-    jsondata = request.json
-    data = json.loads(jsondata)
+    data = request.json
     phone_number = data['phone_number']
     covidLOC(phone_number)
     return flask.Response(status=204)

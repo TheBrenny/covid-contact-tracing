@@ -1,4 +1,3 @@
-import json
 import requests
 
 count = 0
@@ -6,11 +5,8 @@ while 1:
     count += 1
     print("Enter nurse password: ")
     password = input() #87654321
-    password_dict = {'password': password}
-    password_json = json.dumps(password_dict)
-    res = requests.post("https://pfs-cct-demo.herokuapp.com/nurse_logon", json=password_json)
-
-    print(str(res))
+    res = requests.post("https://pfs-cct-demo.herokuapp.com/nurse_logon", json={'password': password})
+    
     if 200 <= res.status_code < 300:
         print("nurse logon successful")
         break
@@ -23,12 +19,9 @@ while 1:
     print("\n\t1. Alert potentially infected users to nearby COVID case\n\t0. Exit")
     selection = input()
     if selection == '1':
-        print("Enter the phone number of the infected person in the format [+614xxxxxxxx]")
+        print("Enter the phone number of the infected person in the format [04xxxxxxxx]")
         ph = input()
-        ph_dict = {'phone_number': ph}
-        ph_json = json.dumps(ph_dict)
-        res = requests.post("https://pfs-cct-demo.herokuapp.com/nurse_add_data", json=ph_dict)
-        print(ph_json)
+        res = requests.post("https://pfs-cct-demo.herokuapp.com/nurse_add_data", json={'phone_number': ph})
         print("\nAlerts sent, enter any key to return to menu")
         input()
     elif selection == '0':
